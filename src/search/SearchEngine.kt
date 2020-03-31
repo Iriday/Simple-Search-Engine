@@ -11,25 +11,37 @@ class SearchEngine {
         try {
             numOfLines = input().toInt()
         } catch (e: NumberFormatException) {
-            output("Error, incorrect input")
+            output("Error, incorrect input.")
             return
         }
         output("Enter all lines with data:")
         val lines = Array(numOfLines) { input() }
-        output("\nEnter the word:")
-        val word = input()
 
-        val searchResults = ArrayList<String>()
-
-        for (line in lines) {
-            val searchResult = getWordNumber(word, line.split(Regex("\\s+")))
-            if (searchResult != -1) searchResults.add(line)
+        output("\nEnter the number of search queries:")
+        val numOfQueries: Int
+        try {
+            numOfQueries = input().toInt()
+        } catch (e: NumberFormatException) {
+            output("Error, incorrect input.")
+            return
         }
+        
+        repeat(numOfQueries) {
+            output("\nEnter the word:")
+            val word = input()
 
-        if (searchResults.isNotEmpty()) {
-            output("\nfound data:")
-            searchResults.forEach { line -> output(line) }
-        } else output("No data found.")
+            val searchResults = ArrayList<String>()
+
+            for (line in lines) {
+                val searchResult = getWordNumber(word, line.split(Regex("\\s+")))
+                if (searchResult != -1) searchResults.add(line)
+            }
+
+            if (searchResults.isNotEmpty()) {
+                output("\nFound data:")
+                searchResults.forEach { line -> output(line) }
+            } else output("No data found.")
+        }
     }
 
     private fun input(): String = readLine()!!.trim()
