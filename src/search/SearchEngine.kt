@@ -25,18 +25,12 @@ class SearchEngine {
             output("Error, incorrect input.")
             return
         }
-        
+
         repeat(numOfQueries) {
-            output("\nEnter the word:")
-            val word = input()
+            output("\nEnter the data:")
+            val data = input()
 
-            val searchResults = ArrayList<String>()
-
-            for (line in lines) {
-                val searchResult = getWordNumber(word, line.split(Regex("\\s+")))
-                if (searchResult != -1) searchResults.add(line)
-            }
-
+            val searchResults = search(data, lines)
             if (searchResults.isNotEmpty()) {
                 output("\nFound data:")
                 searchResults.forEach { line -> output(line) }
@@ -47,6 +41,15 @@ class SearchEngine {
     private fun input(): String = readLine()!!.trim()
 
     private fun output(data: String) = println(data)
+}
+
+fun search(data: String, lines: Array<String>): List<String> {
+    val searchResults = ArrayList<String>()
+
+    for (line in lines) {
+        if (line.contains(data, true)) searchResults.add(line)
+    }
+    return searchResults
 }
 
 fun getWordNumber(word: String, words: List<String>): Int { // linear search
