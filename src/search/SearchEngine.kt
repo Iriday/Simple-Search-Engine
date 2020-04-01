@@ -17,25 +17,55 @@ class SearchEngine {
         output("Enter all lines with data:")
         val lines = Array(numOfLines) { input() }
 
-        output("\nEnter the number of search queries:")
-        val numOfQueries: Int
-        try {
-            numOfQueries = input().toInt()
-        } catch (e: NumberFormatException) {
-            output("Error, incorrect input.")
-            return
+        while (true) {
+            when (menu()) { // option
+                1 -> {
+                    output("\nEnter data:")
+                    output(searchInfo(input(), lines))
+                }
+                2 -> outputAllData(lines)
+                0 -> {
+                    output("\nBye!")
+                    return
+                }
+            }
         }
+    }
 
-        repeat(numOfQueries) {
-            output("\nEnter the data:")
-            val data = input()
-
-            val searchResults = search(data, lines)
-            if (searchResults.isNotEmpty()) {
-                output("\nFound data:")
-                searchResults.forEach { line -> output(line) }
-            } else output("No data found.")
+    private fun menu(): Int {
+        while (true) {
+            output("""|
+                |=== Menu ===
+                |1. Search information
+                |2. Print all data
+                |0. Exit
+            """.trimMargin())
+            try {
+                val input = input().toInt()
+                if (input in 0..2) return input
+                else output("\nIncorrect option! Try again.")
+            } catch (e: Exception) {
+                output("\nIncorrect input! Try again.")
+            }
         }
+    }
+
+    private fun searchInfo(data: String, lines: Array<String>): String {
+        val searchResults = search(data, lines)
+        if (searchResults.isNotEmpty()) {
+            val builder = StringBuilder()
+            searchResults.forEach { line ->
+                builder.append(line)
+                builder.append('\n')
+            }
+            return builder.toString().trimEnd()
+
+        } else return ("No data found.")
+    }
+
+    private fun outputAllData(lines: Array<String>) {
+        output("\n=== Data ===")
+        lines.forEach { line -> output(line) }
     }
 
     private fun input(): String = readLine()!!.trim()
