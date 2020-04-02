@@ -1,29 +1,55 @@
 package search
 
-fun main() {
-    SearchEngine().run()
+import java.io.File
+
+fun main(args: Array<String>) {
+    SearchEngine().run(args)
 }
 
 class SearchEngine {
-    fun run() {
-        output("Enter the number of lines with data:")
-        val numOfLines: Int
-        try {
-            numOfLines = input().toInt()
-        } catch (e: NumberFormatException) {
-            output("Error, incorrect input.")
-            return
+    fun run(args: Array<String>) {
+        val data: Array<String> // lines
+
+        if (args.isNotEmpty()) { // init data from a file
+            if (args.size != 2) {
+                output("Error, incorrect args length")
+                return
+            }
+            if (args[0] == "--data") {
+                try {
+                    data = File(args[1]).readLines().toTypedArray()
+                    if(data.isEmpty()){
+                        output("Error, file isEmpty")
+                        return
+                    }
+                } catch (e: Exception) {
+                    output("Error, ${e.message}")
+                    return
+                }
+            } else {
+                output("Error, unknown arg \"${args[0]}\"")
+                return
+            }
+        } else { // init data from console
+            output("Enter the number of lines with data:")
+            val numOfLines: Int
+            try {
+                numOfLines = input().toInt()
+            } catch (e: NumberFormatException) {
+                output("Error, incorrect input.")
+                return
+            }
+            output("Enter all lines with data:")
+            data = Array(numOfLines) { input() }
         }
-        output("Enter all lines with data:")
-        val lines = Array(numOfLines) { input() }
 
         while (true) {
             when (menu()) { // option
                 1 -> {
                     output("\nEnter data:")
-                    output(searchInfo(input(), lines))
+                    output(searchInfo(input(), data))
                 }
-                2 -> outputAllData(lines)
+                2 -> outputAllData(data)
                 0 -> {
                     output("\nBye!")
                     return
