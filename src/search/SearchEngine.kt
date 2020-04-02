@@ -88,7 +88,7 @@ class SearchEngine {
     private fun searchInfo(chars: String, data: Array<String>): String {
         val searchResults = search(chars, data)
         if (searchResults.isNotEmpty()) {
-            val builder = StringBuilder()
+            val builder = StringBuilder("${searchResults.size} results.\n")
             searchResults.forEach { line ->
                 builder.append(line)
                 builder.append('\n')
@@ -100,11 +100,12 @@ class SearchEngine {
 
     // inverted index
     private fun searchInfo(word: String, data: Array<String>, wordsInvIndex: MutableMap<String, MutableList<Int>>): String {
-        val builder = StringBuilder()
-        wordsInvIndex[word.toLowerCase()]?.forEach { lineIndex ->
+        val lineIndexes = wordsInvIndex[word.toLowerCase()] ?: return "No data found."
+        val builder = StringBuilder("${lineIndexes.size} results.\n")
+        lineIndexes.forEach { lineIndex ->
             builder.append(data[lineIndex])
             builder.append('\n')
-        } ?: builder.append("No data found.")
+        }
         return builder.toString().trimEnd()
     }
 
