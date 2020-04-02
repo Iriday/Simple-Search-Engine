@@ -9,6 +9,7 @@ fun main(args: Array<String>) {
 class SearchEngine {
     fun run(args: Array<String>) {
         val data: Array<String> // lines
+        val mapWordsInvertedIndex: MutableMap<String, MutableList<Int>>
 
         if (args.isNotEmpty()) { // init data from a file
             if (args.size != 2) {
@@ -18,7 +19,7 @@ class SearchEngine {
             if (args[0] == "--data") {
                 try {
                     data = File(args[1]).readLines().toTypedArray()
-                    if(data.isEmpty()){
+                    if (data.isEmpty()) {
                         output("Error, file isEmpty")
                         return
                     }
@@ -43,13 +44,19 @@ class SearchEngine {
             data = Array(numOfLines) { input() }
         }
 
+        mapWordsInvertedIndex = fillMapWithWordsInvertedIndex(HashMap(), data)
+
         while (true) {
             when (menu()) { // option
                 1 -> {
                     output("\nEnter data:")
                     output(searchInfo(input(), data))
                 }
-                2 -> outputAllData(data)
+                2 -> {
+                    output("\nEnter data:")
+                    output(searchInfo(input(), data, mapWordsInvertedIndex))
+                }
+                3 -> outputAllData(data)
                 0 -> {
                     output("\nBye!")
                     return
@@ -62,13 +69,14 @@ class SearchEngine {
         while (true) {
             output("""|
                 |=== Menu ===
-                |1. Search information
-                |2. Print all data
+                |1. Search information (extended, slower search "contains")
+                |2. Search information (fast search "inverted index")
+                |3. Print all data
                 |0. Exit
             """.trimMargin())
             try {
                 val input = input().toInt()
-                if (input in 0..2) return input
+                if (input in 0..3) return input
                 else output("\nIncorrect option! Try again.")
             } catch (e: Exception) {
                 output("\nIncorrect input! Try again.")
@@ -76,8 +84,9 @@ class SearchEngine {
         }
     }
 
-    private fun searchInfo(data: String, lines: Array<String>): String {
-        val searchResults = search(data, lines)
+    // contains
+    private fun searchInfo(chars: String, data: Array<String>): String {
+        val searchResults = search(chars, data)
         if (searchResults.isNotEmpty()) {
             val builder = StringBuilder()
             searchResults.forEach { line ->
@@ -87,6 +96,16 @@ class SearchEngine {
             return builder.toString().trimEnd()
 
         } else return ("No data found.")
+    }
+
+    // inverted index
+    private fun searchInfo(word: String, data: Array<String>, wordsInvIndex: MutableMap<String, MutableList<Int>>): String {
+        val builder = StringBuilder()
+        wordsInvIndex[word.toLowerCase()]?.forEach { lineIndex ->
+            builder.append(data[lineIndex])
+            builder.append('\n')
+        } ?: builder.append("No data found.")
+        return builder.toString().trimEnd()
     }
 
     private fun outputAllData(lines: Array<String>) {
@@ -99,11 +118,31 @@ class SearchEngine {
     private fun output(data: String) = println(data)
 }
 
-fun search(data: String, lines: Array<String>): List<String> {
+fun fillMapWithWordsInvertedIndex(map: MutableMap<String, MutableList<Int>>, data: Array<String>): MutableMap<String, MutableList<Int>> {
+    val regex = Regex("\\s+")
+    for ((lineIndex, line) in data.withIndex()) {
+        val words = line.split(regex)
+
+        for (word in words) {
+            val w = word.toLowerCase()
+            val temp = map[w]
+
+            if (temp == null) {
+                map[w] = mutableListOf(lineIndex)
+            } else {
+                temp.add(lineIndex)
+            }
+        }
+    }
+    return map
+}
+
+// contains
+fun search(chars: String, lines: Array<String>): List<String> {
     val searchResults = ArrayList<String>()
 
     for (line in lines) {
-        if (line.contains(data, true)) searchResults.add(line)
+        if (line.contains(chars, true)) searchResults.add(line)
     }
     return searchResults
 }
