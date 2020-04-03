@@ -1,6 +1,7 @@
 package search
 
 import java.io.File
+import search.MenuOption.*
 
 fun main(args: Array<String>) {
     SearchEngine().run(args)
@@ -47,17 +48,17 @@ class SearchEngine {
         mapWordsInvertedIndex = fillMapWithWordsInvertedIndex(HashMap(), data)
 
         while (true) {
-            when (menu()) { // option
-                1 -> {
+            when (mainMenu()) {
+                SEARCH_EXTENDED_SLOW -> {
                     output("\nEnter data:")
                     output(searchInfo(input(), data))
                 }
-                2 -> {
+                SEARCH_WORD_FAST -> {
                     output("\nEnter data:")
                     output(searchInfo(input(), data, mapWordsInvertedIndex))
                 }
-                3 -> outputAllData(data)
-                0 -> {
+                OUTPUT_DATA -> outputAllData(data)
+                EXIT -> {
                     output("\nBye!")
                     return
                 }
@@ -65,7 +66,7 @@ class SearchEngine {
         }
     }
 
-    private fun menu(): Int {
+    private fun mainMenu(): MenuOption {
         while (true) {
             output("""|
                 |=== Menu ===
@@ -76,8 +77,11 @@ class SearchEngine {
             """.trimMargin())
             try {
                 val input = input().toInt()
-                if (input in 0..3) return input
-                else output("\nIncorrect option! Try again.")
+                if (input in MenuOption.values().indices) {
+                    return MenuOption.values()[input]
+                } else {
+                    output("\nIncorrect option! Try again.")
+                }
             } catch (e: Exception) {
                 output("\nIncorrect input! Try again.")
             }
