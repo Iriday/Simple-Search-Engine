@@ -42,6 +42,10 @@ class SearchEngine {
                 output("Error, incorrect input.")
                 return
             }
+            if (numOfLines < 1) {
+                output("Error, the number of lines should be >= 1.")
+                return
+            }
             output("Enter all lines with data:")
             data = Array(numOfLines) { input() }
         }
