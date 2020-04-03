@@ -2,6 +2,7 @@ package search
 
 import java.io.File
 import search.MenuOption.*
+import search.SearchStrategy.*
 
 fun main(args: Array<String>) {
     SearchEngine().run(args)
@@ -47,15 +48,17 @@ class SearchEngine {
 
         mapWordsInvertedIndex = fillMapWithWordsInvertedIndex(HashMap(), data)
 
-        while (true) {
+        mainMenu@ while (true) {
             when (mainMenu()) {
                 SEARCH_EXTENDED_SLOW -> {
+                    val strategy = searchStrategyMenu() ?: continue@mainMenu
                     output("\nEnter data:")
-                    output(searchInfo(input(), data))
+                    output(searchInfo(input(), data, strategy))
                 }
                 SEARCH_WORD_FAST -> {
+                    val strategy = searchStrategyMenu() ?: continue@mainMenu
                     output("\nEnter data:")
-                    output(searchInfo(input(), data, mapWordsInvertedIndex))
+                    output(searchInfo(input(), data, strategy, mapWordsInvertedIndex))
                 }
                 OUTPUT_DATA -> outputAllData(data)
                 EXIT -> {
@@ -88,29 +91,28 @@ class SearchEngine {
         }
     }
 
-    // contains
-    private fun searchInfo(chars: String, data: Array<String>): String {
-        val searchResults = search(chars, data)
-        if (searchResults.isNotEmpty()) {
-            val builder = StringBuilder("${searchResults.size} results.\n")
-            searchResults.forEach { line ->
-                builder.append(line)
-                builder.append('\n')
+    private fun searchStrategyMenu(): SearchStrategy? {
+        while (true) {
+            output("""|
+                |=== Search strategy ===
+                |1. ALL
+                |2. ANY
+                |3. NONE
+                |0. Return
+            """.trimMargin())
+            try {
+                var input = input().toInt()
+                if (input == 0) return null
+                input--
+                if (input in SearchStrategy.values().indices) {
+                    return SearchStrategy.values()[input]
+                } else {
+                    output("\nIncorrect option! Try again.")
+                }
+            } catch (e: Exception) {
+                output("\nIncorrect input! Try again.")
             }
-            return builder.toString().trimEnd()
-
-        } else return ("No data found.")
-    }
-
-    // inverted index
-    private fun searchInfo(word: String, data: Array<String>, wordsInvIndex: MutableMap<String, MutableList<Int>>): String {
-        val lineIndexes = wordsInvIndex[word.toLowerCase()] ?: return "No data found."
-        val builder = StringBuilder("${lineIndexes.size} results.\n")
-        lineIndexes.forEach { lineIndex ->
-            builder.append(data[lineIndex])
-            builder.append('\n')
         }
-        return builder.toString().trimEnd()
     }
 
     private fun outputAllData(lines: Array<String>) {
@@ -120,13 +122,72 @@ class SearchEngine {
 
     private fun input(): String = readLine()!!.trim()
 
-    private fun output(data: String) = println(data)
+    private fun output(vararg data: String) = data.forEach { println(it) }
+}
+
+private val regexStr = " \t\n\r.,!?" // \\x0B\\f  // check
+private val regex = Regex("[$regexStr]+") // "[\\s\\p{Punct}]+"
+
+private fun convertQuery(query: String): List<String> {
+    return query.toLowerCase().trim { char -> char in regexStr }.split(regex)
+}
+
+// contains
+private fun searchInfo(query: String, data: Array<String>, strategy: SearchStrategy): String {
+    val queries = convertQuery(query)
+    val builder = StringBuilder()
+
+    return when (strategy) {
+        ALL -> {
+            val searchResults = ArrayList<String>()
+            line@ for (line in data) {
+                for (q in queries) {
+                    if (!line.contains(q, true)) continue@line
+                }
+                searchResults.add(line)
+            }
+            if (searchResults.isNotEmpty()) {
+                builder.append("${searchResults.size} results.\n")
+                searchResults.forEach { line ->
+                    builder.append(line)
+                    builder.append('\n')
+                }
+                return builder.toString().trimEnd()
+            } else return ("No data found.")
+        }
+        ANY -> "This search strategy is not implemented yet, use ALL"
+        NONE -> "This search strategy is not implemented yet, use ALL"
+    }
+}
+
+// inverted index
+private fun searchInfo(query: String, data: Array<String>, strategy: SearchStrategy, wordsInvIndex: MutableMap<String, MutableList<Int>>): String {
+    val queries = convertQuery(query)
+    val builder = StringBuilder()
+
+    return when (strategy) {
+        ALL -> {
+            val lineIndexes: MutableList<Int> = wordsInvIndex[queries[0]] ?: return "No data found."
+            for (wordIndex: Int in 1..queries.lastIndex) {
+                val tempLineIndexes = wordsInvIndex[queries[wordIndex]] ?: return "No data found."
+                lineIndexes.retainAll(tempLineIndexes)
+                if (lineIndexes.isEmpty()) return "No data found."
+            }
+            builder.append("${lineIndexes.size} results.\n")
+            lineIndexes.forEach { lineIndex ->
+                builder.append(data[lineIndex])
+                builder.append('\n')
+            }
+            return builder.toString().trimEnd()
+        }
+        ANY -> "This search strategy is not implemented yet, use ALL"
+        NONE -> "This search strategy is not implemented yet, use ALL"
+    }
 }
 
 fun fillMapWithWordsInvertedIndex(map: MutableMap<String, MutableList<Int>>, data: Array<String>): MutableMap<String, MutableList<Int>> {
-    val regex = Regex("\\s+")
     for ((lineIndex, line) in data.withIndex()) {
-        val words = line.split(regex)
+        val words = convertQuery(line)
 
         for (word in words) {
             val w = word.toLowerCase()
