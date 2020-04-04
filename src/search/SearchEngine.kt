@@ -141,7 +141,7 @@ private fun searchInfo(query: String, data: Array<String>, strategy: SearchStrat
     val queries = convertQuery(query)
     val builder = StringBuilder()
 
-    return when (strategy) {
+    val searchResults = when (strategy) {
         ALL -> {
             val searchResults = ArrayList<String>()
             line@ for (line in data) {
@@ -150,26 +150,37 @@ private fun searchInfo(query: String, data: Array<String>, strategy: SearchStrat
                 }
                 searchResults.add(line)
             }
-            if (searchResults.isNotEmpty()) {
-                builder.append("${searchResults.size} results.\n")
-                searchResults.forEach { line ->
-                    builder.append(line)
-                    builder.append('\n')
-                }
-                return builder.toString().trimEnd()
-            } else return ("No data found.")
+            searchResults
         }
-        ANY -> "This search strategy is not implemented yet, use ALL"
-        NONE -> "This search strategy is not implemented yet, use ALL"
+        ANY -> listOf("This search strategy is not implemented yet, use ALL or NONE")
+        NONE -> {
+            val searchResults = data.filter { line ->
+                for (q in queries) {
+                    if (line.contains(q, true)) return@filter false
+                }
+                true
+            }
+            searchResults
+        }
     }
+
+    if (searchResults.isNotEmpty()) {
+        builder.append("${searchResults.size} results.\n")
+        searchResults.forEach { line ->
+            builder.append(line)
+            builder.append('\n')
+        }
+        return builder.toString().trimEnd()
+    } else return ("No data found.")
 }
 
 // inverted index
 private fun searchInfo(query: String, data: Array<String>, strategy: SearchStrategy, wordsInvIndex: MutableMap<String, MutableList<Int>>): String {
     val queries = convertQuery(query)
     val builder = StringBuilder()
+    if (strategy == ANY) return "This search strategy is not implemented yet, use ALL or NONE"
 
-    return when (strategy) {
+    val lineIndexes = when (strategy) {
         ALL -> {
             val lineIndexes: MutableList<Int> = wordsInvIndex[queries[0]] ?: return "No data found."
             for (wordIndex: Int in 1..queries.lastIndex) {
@@ -177,16 +188,26 @@ private fun searchInfo(query: String, data: Array<String>, strategy: SearchStrat
                 lineIndexes.retainAll(tempLineIndexes)
                 if (lineIndexes.isEmpty()) return "No data found."
             }
-            builder.append("${lineIndexes.size} results.\n")
-            lineIndexes.forEach { lineIndex ->
-                builder.append(data[lineIndex])
-                builder.append('\n')
-            }
-            return builder.toString().trimEnd()
+            lineIndexes
         }
-        ANY -> "This search strategy is not implemented yet, use ALL"
-        NONE -> "This search strategy is not implemented yet, use ALL"
+        ANY -> listOf(0)
+        NONE -> {
+            var supplier = 0
+            val lineIndexes = MutableList(data.size) { supplier++ }
+            for (q in queries) {
+                val temp = wordsInvIndex[q] ?: continue
+                lineIndexes.removeAll(temp)
+            }
+            lineIndexes
+        }
     }
+
+    builder.append("${lineIndexes.size} results.\n")
+    lineIndexes.forEach { lineIndex ->
+        builder.append(data[lineIndex])
+        builder.append('\n')
+    }
+    return builder.toString().trimEnd()
 }
 
 fun fillMapWithWordsInvertedIndex(map: MutableMap<String, MutableList<Int>>, data: Array<String>): MutableMap<String, MutableList<Int>> {
