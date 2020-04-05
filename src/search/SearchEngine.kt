@@ -57,8 +57,13 @@ class SearchEngine {
             when (val menuOption = mainMenu()) {
                 SEARCH_EXTENDED_SLOW, SEARCH_FAST -> {
                     val strategy = searchStrategyMenu() ?: continue@mainMenu
+
                     output("\nEnter data:")
-                    val convertedQuery = queryConverter(input())
+                    var query: String
+                    do {
+                        query = input()
+                    } while (query.isEmpty())
+                    val convertedQuery = queryConverter(query)
 
                     val searchResults = when (menuOption) {
                         SEARCH_EXTENDED_SLOW -> search(convertedQuery, data, strategy)
