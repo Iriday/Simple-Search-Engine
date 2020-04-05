@@ -11,7 +11,8 @@ fun main(args: Array<String>) {
 class SearchEngine {
     fun run(args: Array<String>) {
         val data: Array<String> // lines
-        val mapWordsInvertedIndex: MutableMap<String, MutableList<Int>>
+        val dataInvertedIndex: MutableMap<String, MutableList<Int>>
+        val queryConverter = ::trimSplitToLowerCaseQuery
 
         if (args.isNotEmpty()) { // init data from a file
             if (args.size != 2) {
@@ -50,19 +51,21 @@ class SearchEngine {
             data = Array(numOfLines) { input() }
         }
 
-        mapWordsInvertedIndex = fillMapWithWordsInvertedIndex(HashMap(), data)
+        dataInvertedIndex = invertedIndex(HashMap(), data, queryConverter)
 
         mainMenu@ while (true) {
-            when (mainMenu()) {
-                SEARCH_EXTENDED_SLOW -> {
+            when (val menuOption = mainMenu()) {
+                SEARCH_EXTENDED_SLOW, SEARCH_FAST -> {
                     val strategy = searchStrategyMenu() ?: continue@mainMenu
                     output("\nEnter data:")
-                    output(searchResultsToString(search(input(), data, strategy)))
-                }
-                SEARCH_WORD_FAST -> {
-                    val strategy = searchStrategyMenu() ?: continue@mainMenu
-                    output("\nEnter data:")
-                    output(searchResultsToString(search(input(), data, strategy, mapWordsInvertedIndex)))
+                    val convertedQuery = queryConverter(input())
+
+                    val searchResults = when (menuOption) {
+                        SEARCH_EXTENDED_SLOW -> search(convertedQuery, data, strategy)
+                        SEARCH_FAST -> search(convertedQuery, data, strategy, dataInvertedIndex)
+                        else -> emptyList() /*ignore this line*/
+                    }
+                    output(searchResultsToString(searchResults))
                 }
                 OUTPUT_DATA -> outputAllData(data)
                 EXIT -> {
@@ -124,27 +127,25 @@ class SearchEngine {
         lines.forEach { line -> output(line) }
     }
 
+    private val trimQuery = " \t\n\r.,!?" // \\x0B\\f  // check
+    private val splitQuery = Regex("[$trimQuery]+") // "[\\s\\p{Punct}]+"
+
+    private fun trimSplitToLowerCaseQuery(query: String): List<String> {
+        return query.toLowerCase().trim { char -> char in trimQuery }.split(splitQuery)
+    }
+
     private fun input(): String = readLine()!!.trim()
 
     private fun output(vararg data: String) = data.forEach { println(it) }
 }
 
-private val regexStr = " \t\n\r.,!?" // \\x0B\\f  // check
-private val regex = Regex("[$regexStr]+") // "[\\s\\p{Punct}]+"
-
-private fun convertQuery(query: String): List<String> {
-    return query.toLowerCase().trim { char -> char in regexStr }.split(regex)
-}
-
 // contains
-private fun search(query: String, data: Array<String>, strategy: SearchStrategy): List<String> {
-    val queries = convertQuery(query)
-
+private fun search(convertedQuery: List<String>, data: Array<String>, strategy: SearchStrategy): List<String> {
     val searchResults = when (strategy) {
         ALL -> {
             val searchResults = ArrayList<String>()
             line@ for (line in data) {
-                for (q in queries) {
+                for (q in convertedQuery) {
                     if (!line.contains(q, true)) continue@line
                 }
                 searchResults.add(line)
@@ -154,7 +155,7 @@ private fun search(query: String, data: Array<String>, strategy: SearchStrategy)
         ANY -> listOf("This search strategy is not implemented yet, use ALL or NONE")
         NONE -> {
             val searchResults = data.filter { line ->
-                for (q in queries) {
+                for (q in convertedQuery) {
                     if (line.contains(q, true)) return@filter false
                 }
                 true
@@ -166,15 +167,14 @@ private fun search(query: String, data: Array<String>, strategy: SearchStrategy)
 }
 
 // inverted index
-private fun search(query: String, data: Array<String>, strategy: SearchStrategy, wordsInvIndex: MutableMap<String, MutableList<Int>>): List<String> {
-    val queries = convertQuery(query)
+private fun search(convertedQuery: List<String>, data: Array<String>, strategy: SearchStrategy, dataInvIndex: MutableMap<String, MutableList<Int>>): List<String> {
     if (strategy == ANY) return listOf("This search strategy is not implemented yet, use ALL or NONE")
 
     val lineIndexes = when (strategy) {
         ALL -> {
-            val lineIndexes: MutableList<Int> = wordsInvIndex[queries[0]] ?: return emptyList()
-            for (wordIndex: Int in 1..queries.lastIndex) {
-                val tempLineIndexes = wordsInvIndex[queries[wordIndex]] ?: return emptyList()
+            val lineIndexes: MutableList<Int> = dataInvIndex[convertedQuery[0]] ?: return emptyList()
+            for (wordIndex: Int in 1..convertedQuery.lastIndex) {
+                val tempLineIndexes = dataInvIndex[convertedQuery[wordIndex]] ?: return emptyList()
                 lineIndexes.retainAll(tempLineIndexes)
                 if (lineIndexes.isEmpty()) return emptyList()
             }
@@ -184,8 +184,8 @@ private fun search(query: String, data: Array<String>, strategy: SearchStrategy,
         NONE -> {
             var supplier = 0
             val lineIndexes = MutableList(data.size) { supplier++ }
-            for (q in queries) {
-                val temp = wordsInvIndex[q] ?: continue
+            for (q in convertedQuery) {
+                val temp = dataInvIndex[q] ?: continue
                 lineIndexes.removeAll(temp)
             }
             lineIndexes
@@ -194,9 +194,9 @@ private fun search(query: String, data: Array<String>, strategy: SearchStrategy,
     return lineIndexes.map { data[it] }
 }
 
-fun fillMapWithWordsInvertedIndex(map: MutableMap<String, MutableList<Int>>, data: Array<String>): MutableMap<String, MutableList<Int>> {
+fun invertedIndex(map: MutableMap<String, MutableList<Int>>, data: Array<String>, lineConverter: (String) -> List<String>): MutableMap<String, MutableList<Int>> {
     for ((lineIndex, line) in data.withIndex()) {
-        val words = convertQuery(line)
+        val words = lineConverter(line) // = convertQuery(line)
 
         for (word in words) {
             val w = word.toLowerCase()
