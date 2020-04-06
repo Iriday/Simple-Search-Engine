@@ -113,11 +113,18 @@ class SearchEngine {
                 |0. Return
             """.trimMargin())
             try {
-                var input = input().toInt()
-                if (input == 0) return null
-                input--
-                if (input in SearchStrategy.values().indices) {
-                    return SearchStrategy.values()[input]
+                val inputStr = input().toUpperCase()
+                if (inputStr == "RETURN") return null
+                try {
+                    return SearchStrategy.valueOf(inputStr)
+                } catch (e: Exception) {
+                    // continue, try to cast to int
+                }
+                var inputInt = inputStr.toInt()
+                if (inputInt == 0) return null
+                inputInt--
+                if (inputInt in SearchStrategy.values().indices) {
+                    return SearchStrategy.values()[inputInt]
                 } else {
                     output("\nIncorrect option! Try again.")
                 }
