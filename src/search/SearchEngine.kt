@@ -173,9 +173,7 @@ private fun search(convertedQuery: List<String>, data: Array<String>, strategy: 
         }
         NONE -> {
             val searchResults = data.filter { line ->
-                for (q in convertedQuery) {
-                    if (line.contains(q, true)) return@filter false
-                }
+                convertedQuery.forEach { q -> if (line.contains(q, true)) return@filter false }
                 true
             }
             searchResults
@@ -205,10 +203,7 @@ private fun search(convertedQuery: List<String>, data: Array<String>, strategy: 
         NONE -> {
             var supplier = 0
             val lineIndexes = MutableList(data.size) { supplier++ }
-            for (q in convertedQuery) {
-                val temp = dataInvIndex[q] ?: continue
-                lineIndexes.removeAll(temp)
-            }
+            convertedQuery.forEach { q -> lineIndexes.removeAll(dataInvIndex[q] ?: return@forEach) }
             lineIndexes
         }
     }
