@@ -177,9 +177,10 @@ private fun search(convertedQuery: List<String>, data: Array<String>, strategy: 
 
     val lineIndexes = when (strategy) {
         ALL -> {
-            val lineIndexes: MutableList<Int> = dataInvIndex[convertedQuery[0]] ?: return emptyList()
-            for (wordIndex: Int in 1..convertedQuery.lastIndex) {
-                val tempLineIndexes = dataInvIndex[convertedQuery[wordIndex]] ?: return emptyList()
+            val lineIndexes = ArrayList<Int>()
+            lineIndexes.addAll(dataInvIndex[convertedQuery[0]] ?: return emptyList())
+            for (queryIndex in 1..convertedQuery.lastIndex) {
+                val tempLineIndexes = dataInvIndex[convertedQuery[queryIndex]] ?: return emptyList()
                 lineIndexes.retainAll(tempLineIndexes)
                 if (lineIndexes.isEmpty()) return emptyList()
             }
