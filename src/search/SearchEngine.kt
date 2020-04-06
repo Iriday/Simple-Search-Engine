@@ -164,7 +164,13 @@ private fun search(convertedQuery: List<String>, data: Array<String>, strategy: 
             }
             searchResults
         }
-        ANY -> listOf("This search strategy is not implemented yet, use ALL or NONE")
+        ANY -> {
+            val searchResults = LinkedHashSet<String>()
+            convertedQuery.forEach { q ->
+                data.forEach { d -> if (d.contains(q, true)) searchResults.add(d) }
+            }
+            searchResults.toList()
+        }
         NONE -> {
             val searchResults = data.filter { line ->
                 for (q in convertedQuery) {
@@ -180,8 +186,6 @@ private fun search(convertedQuery: List<String>, data: Array<String>, strategy: 
 
 // inverted index
 private fun search(convertedQuery: List<String>, data: Array<String>, strategy: SearchStrategy, dataInvIndex: MutableMap<String, MutableList<Int>>): List<String> {
-    if (strategy == ANY) return listOf("This search strategy is not implemented yet, use ALL or NONE")
-
     val lineIndexes = when (strategy) {
         ALL -> {
             val lineIndexes = ArrayList<Int>()
@@ -193,7 +197,11 @@ private fun search(convertedQuery: List<String>, data: Array<String>, strategy: 
             }
             lineIndexes
         }
-        ANY -> listOf(0)
+        ANY -> {
+            val lineIndexes = LinkedHashSet<Int>()
+            convertedQuery.forEach { q -> lineIndexes.addAll(dataInvIndex[q] ?: return@forEach) }
+            lineIndexes
+        }
         NONE -> {
             var supplier = 0
             val lineIndexes = MutableList(data.size) { supplier++ }
@@ -209,7 +217,7 @@ private fun search(convertedQuery: List<String>, data: Array<String>, strategy: 
 
 fun invertedIndex(map: MutableMap<String, MutableList<Int>>, data: Array<String>, lineConverter: (String) -> List<String>): MutableMap<String, MutableList<Int>> {
     for ((lineIndex, line) in data.withIndex()) {
-        val words = lineConverter(line) // = convertQuery(line)
+        val words = lineConverter(line)
 
         for (word in words) {
             val w = word.toLowerCase()
