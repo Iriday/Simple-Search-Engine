@@ -229,9 +229,9 @@ fun invertedIndex(map: MutableMap<String, MutableList<Int>>, data: Array<String>
 }
 
 fun searchResultsToString(data: List<String>): String {
-    if (data.isEmpty()) return "No data found."
+    if (data.isEmpty()) return "\nNo data found."
 
-    val builder = StringBuilder("${data.size} results.\n")
+    val builder = StringBuilder("\n${data.size} results.\n")
     data.forEach { d ->
         builder.append(d)
         builder.append('\n')
