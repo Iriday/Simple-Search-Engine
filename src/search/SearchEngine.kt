@@ -72,7 +72,7 @@ class SearchEngine {
                     }
                     output(searchResultsToString(searchResults))
                 }
-                OUTPUT_DATA -> outputAllData(data)
+                OUTPUT_DATA -> output(searchResultsToString(data.toList()))
                 EXIT -> {
                     output("\nBye!")
                     return
@@ -132,11 +132,6 @@ class SearchEngine {
                 output("\nIncorrect input! Try again.")
             }
         }
-    }
-
-    private fun outputAllData(lines: Array<String>) {
-        output("\n=== Data ===")
-        lines.forEach { line -> output(line) }
     }
 
     private val trimQuery = " \t\n\r.,!?" // \\x0B\\f  // check
